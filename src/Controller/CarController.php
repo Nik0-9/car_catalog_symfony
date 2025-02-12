@@ -178,9 +178,6 @@ final class CarController extends AbstractController
     public function softDelete(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
         try{
-            if($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
-                return new JsonResponse(['error' => 'Method Not Allowed'], 405);
-            }
             $car = $entityManager->getRepository(Car::class)->find($id);
     
             if (!$car) {
