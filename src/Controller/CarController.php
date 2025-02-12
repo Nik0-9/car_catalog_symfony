@@ -18,7 +18,10 @@ final class CarController extends AbstractController
     {
         $cars = $entityManager
             ->getRepository(Car::class)
-            ->findAll();
+            ->createQueryBuilder('c')
+            ->andWhere('c.deleted_at IS NULL')
+            ->getQuery()
+            ->getResult();
 
         $data = [];
         foreach ($cars as $car) {
@@ -27,9 +30,8 @@ final class CarController extends AbstractController
                 'brand' => $car->getBrand(),
                 'model' => $car->getModel(),
                 'price' => $car->getPrice(),
-                'status' => $car->getStatus(),
+                'status' => $car->getStatus()->value,
                 'productionYear' => $car->getProductionYear(),
-                'deletedAt' => $car->getDeletedAt()
             ];
         }
 
@@ -84,7 +86,6 @@ final class CarController extends AbstractController
             'price' => $car->getPrice(),
             'status' => $car->getStatus(),
             'productionYear' => $car->getProductionYear(),
-            'deletedAt' => $car->getDeletedAt()
         ];
         return new JsonResponse($data);
     }
