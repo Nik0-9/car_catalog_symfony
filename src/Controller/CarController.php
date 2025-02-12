@@ -13,6 +13,7 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/api', name: 'api_')]
 final class CarController extends AbstractController
 {
+    //Show all cars not deleted
     #[Route('/cars', name: 'car_index', methods: ['GET'])]
     public function index(EntityManagerInterface $entityManager): JsonResponse
     {
@@ -42,7 +43,36 @@ final class CarController extends AbstractController
         }
 
     }
-    #[Route('/cars', name: 'car_create', methods: ['POST'])]
+
+    //shows a car seeked by id and not deleted
+    #[Route('/car/{id}', name: 'project_show', methods: ['GET'])]
+    public function show(EntityManagerInterface $entityManager, int $id): JsonResponse
+    {
+        try {
+
+            $car = $entityManager->getRepository(Car::class)->find($id);
+
+            if (!$car) {
+                return $this->json([
+                    'error' => 'Car not found'
+                ], 404);
+            }
+            $data = [
+                'id' => $car->getId(),
+                'brand' => $car->getBrand(),
+                'model' => $car->getModel(),
+                'price' => $car->getPrice(),
+                'status' => $car->getStatus(),
+                'production_year' => $car->getProductionYear(),
+            ];
+            return new JsonResponse($data);
+        } catch (\Exception $e) {
+            return new JsonResponse(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    //create a new car
+    #[Route('/car', name: 'car_create', methods: ['POST'])]
     public function create(EntityManagerInterface $entityManager, Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
@@ -82,34 +112,8 @@ final class CarController extends AbstractController
         }
 
     }
-
-    #[Route('/cars/{id}', name: 'project_show', methods: ['GET'])]
-    public function show(EntityManagerInterface $entityManager, int $id): JsonResponse
-    {
-        try {
-
-            $car = $entityManager->getRepository(Car::class)->find($id);
-
-            if (!$car) {
-                return $this->json([
-                    'error' => 'Car not found'
-                ], 404);
-            }
-            $data = [
-                'id' => $car->getId(),
-                'brand' => $car->getBrand(),
-                'model' => $car->getModel(),
-                'price' => $car->getPrice(),
-                'status' => $car->getStatus(),
-                'production_year' => $car->getProductionYear(),
-            ];
-            return new JsonResponse($data);
-        } catch (\Exception $e) {
-            return new JsonResponse(['error' => $e->getMessage()], 500);
-        }
-    }
-
-    #[Route('/cars/{id}', name: 'car_update', methods: ['PUT', 'PATCH'])]
+    //update existing car seeked by id also deleted
+    #[Route('/car/{id}', name: 'car_update', methods: ['PUT', 'PATCH'])]
     public function update(EntityManagerInterface $entityManager, int $id, Request $request): JsonResponse
     {
         try {
@@ -170,7 +174,7 @@ final class CarController extends AbstractController
         }
     }
 
-    #[Route('/cars/{id}', name: 'car_soft_delete', methods: ['DELETE'])]
+    #[Route('/car/{id}', name: 'car_soft_delete', methods: ['DELETE'])]
     public function softDelete(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
         try{
@@ -183,6 +187,12 @@ final class CarController extends AbstractController
                 return $this->json([
                     'error' => 'Car not found'
                 ], 404);
+            }
+
+            if($car->getDeletedAt() !== null) {
+                return $this->json([
+                    'error' => 'Car already deleted'
+                ], 400);
             }
     
             $car->setDeletedAt(new \DateTime());
