@@ -16,151 +16,184 @@ final class CarController extends AbstractController
     #[Route('/cars', name: 'car_index', methods: ['GET'])]
     public function index(EntityManagerInterface $entityManager): JsonResponse
     {
-        $cars = $entityManager
-            ->getRepository(Car::class)
-            ->createQueryBuilder('c')
-            ->andWhere('c.deleted_at IS NULL')
-            ->getQuery()
-            ->getResult();
+        try {
 
-        $data = [];
-        foreach ($cars as $car) {
-            $data[] = [
-                'id' => $car->getId(),
-                'brand' => $car->getBrand(),
-                'model' => $car->getModel(),
-                'price' => $car->getPrice(),
-                'status' => $car->getStatus()->value,
-                'productionYear' => $car->getProductionYear(),
-            ];
+            $cars = $entityManager
+                ->getRepository(Car::class)
+                ->createQueryBuilder('c')
+                ->andWhere('c.deleted_at IS NULL')
+                ->getQuery()
+                ->getResult();
+
+            $data = [];
+            foreach ($cars as $car) {
+                $data[] = [
+                    'id' => $car->getId(),
+                    'brand' => $car->getBrand(),
+                    'model' => $car->getModel(),
+                    'price' => $car->getPrice(),
+                    'status' => $car->getStatus()->value,
+                    'production_year' => $car->getProductionYear(),
+                ];
+            }
+            return new JsonResponse($data);
+        } catch (\Exception $e) {
+            return new JsonResponse(['error' => $e->getMessage()], 500);
         }
 
-        return new JsonResponse($data);
     }
     #[Route('/cars', name: 'car_create', methods: ['POST'])]
     public function create(EntityManagerInterface $entityManager, Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
+        if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
+            return new JsonResponse(['error' => 'Invalid JSON'], 400);
+        }
+        $data = json_decode($request->getContent(), true);
 
-        if (!isset($data['brand']) || !isset($data['model']) || !isset($data['price']) || !isset($data['productionYear'])) {
+        if (!isset($data['brand']) || !isset($data['model']) || !isset($data['price']) || !isset($data['production_year'])) {
             return $this->json([
                 'error' => 'Missing parameters'
             ], 400);
         }
-        $car = new Car();
-        $car->setBrand($data['brand']);
-        $car->setModel($data['model']);
-        $car->setPrice($data['price']);
-        $car->setProductionYear($data['productionYear']);
-        $car->setStatus(CarStatus::AVAILABLE);
+        try {
+            $car = new Car();
+            $car->setBrand($data['brand']);
+            $car->setModel($data['model']);
+            $car->setPrice($data['price']);
+            $car->setProductionYear($data['production_year']);
+            $car->setStatus(CarStatus::AVAILABLE);
 
-        $entityManager->persist($car);
-        $entityManager->flush();
+            $entityManager->persist($car);
+            $entityManager->flush();
 
-        $data = [
-            'id' => $car->getId(),
-            'brand' => $car->getBrand(),
-            'model' => $car->getModel(),
-            'price' => $car->getPrice(),
-            'status' => $car->getStatus(),
-            'productionYear' => $car->getProductionYear()
-        ];
+            $data = [
+                'id' => $car->getId(),
+                'brand' => $car->getBrand(),
+                'model' => $car->getModel(),
+                'price' => $car->getPrice(),
+                'status' => $car->getStatus(),
+                'production_year' => $car->getProductionYear()
+            ];
 
-        return new JsonResponse($data);
+            return new JsonResponse($data);
+        } catch (\Exception $e) {
+            return new JsonResponse(['error' => $e->getMessage()], 500);
+        }
+
     }
 
-    #[Route('/cars/{id}', name: 'project_show', methods:['GET'])]
+    #[Route('/cars/{id}', name: 'project_show', methods: ['GET'])]
     public function show(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
-        $car = $entityManager->getRepository(Car::class)->find($id);
+        try {
 
-        if (!$car) {
-            return $this->json([
-                'error' => 'Car not found'
-            ], 404);
+            $car = $entityManager->getRepository(Car::class)->find($id);
+
+            if (!$car) {
+                return $this->json([
+                    'error' => 'Car not found'
+                ], 404);
+            }
+            $data = [
+                'id' => $car->getId(),
+                'brand' => $car->getBrand(),
+                'model' => $car->getModel(),
+                'price' => $car->getPrice(),
+                'status' => $car->getStatus(),
+                'production_year' => $car->getProductionYear(),
+            ];
+            return new JsonResponse($data);
+        } catch (\Exception $e) {
+            return new JsonResponse(['error' => $e->getMessage()], 500);
         }
-        $data =[
-            'id' => $car->getId(),
-            'brand' => $car->getBrand(),
-            'model' => $car->getModel(),
-            'price' => $car->getPrice(),
-            'status' => $car->getStatus(),
-            'productionYear' => $car->getProductionYear(),
-        ];
-        return new JsonResponse($data);
     }
 
     #[Route('/cars/{id}', name: 'car_update', methods: ['PUT', 'PATCH'])]
     public function update(EntityManagerInterface $entityManager, int $id, Request $request): JsonResponse
     {
-        $car = $entityManager->getRepository(Car::class)->find($id);
+        try {
+            if (!in_array($request->getMethod(), ['PUT', 'PATCH'])) {
+                return $this->json(['error' => 'Method Not Allowed'], 405);
+            }
+            $car = $entityManager->getRepository(Car::class)->find($id);
 
-        if (!$car) {
-            return $this->json([
-                'error' => 'Car not found'
-            ], 404);
-        }
-        //gestione richiesta PUT
-        if($request->getMethod()==='PUT'){
-            $data = json_decode($request->getContent(), true);
-            $car->setBrand($data['brand']);
-            $car->setModel($data['model']);
-            $car->setPrice($data['price']);
-            $car->setProductionYear($data['productionYear']);
-            $car->setStatus(CarStatus::AVAILABLE);
-            //gestione richiesta PATCH
-        } else if($request->getMethod() === 'PATCH'){
-            $data = json_decode($request->getContent(), true);
-            if (isset($data['brand'])) {
+            if (!$car) {
+                return $this->json([
+                    'error' => 'Car not found'
+                ], 404);
+            }
+            //gestione richiesta PUT
+            if ($request->getMethod() === 'PUT') {
+                $data = json_decode($request->getContent(), true);
                 $car->setBrand($data['brand']);
-            }
-            if (isset($data['model'])) {
                 $car->setModel($data['model']);
-            }
-            if (isset($data['price'])) {
                 $car->setPrice($data['price']);
-            }
-            if (isset($data['productionYear'])) {
-                $car->setProductionYear($data['productionYear']);
-            }
-            if (isset($data['status'])) {
-                $status = CarStatus::tryFrom($data['status']);
-                if ($status) {
-                    $car->setStatus($status);
-                } else {
-                    return $this->json(['error' => 'Invalid status value'], 400);
+                $car->setProductionYear($data['production_year']);
+                $car->setStatus(CarStatus::AVAILABLE);
+                //gestione richiesta PATCH
+            } else if ($request->getMethod() === 'PATCH') {
+                $data = json_decode($request->getContent(), true);
+                if (isset($data['brand'])) {
+                    $car->setBrand($data['brand']);
+                }
+                if (isset($data['model'])) {
+                    $car->setModel($data['model']);
+                }
+                if (isset($data['price'])) {
+                    $car->setPrice($data['price']);
+                }
+                if (isset($data['production_year'])) {
+                    $car->setProductionYear($data['production_year']);
+                }
+                if (isset($data['status'])) {
+                    $status = CarStatus::tryFrom($data['status']);
+                    if ($status) {
+                        $car->setStatus($status);
+                    } else {
+                        return $this->json(['error' => 'Invalid status value'], 400);
+                    }
                 }
             }
-        }
-        $entityManager->persist($car);
-        $entityManager->flush();
+            $entityManager->persist($car);
+            $entityManager->flush();
 
-        return $this->json([
-            'id'=>$car->getId(),
-            'brand'=>$car->getBrand(),
-            'model'=>$car->getModel(),
-            'price'=>$car->getPrice(),
-            'status' => $car->getStatus()->value
-        ]);
+            return $this->json([
+                'id' => $car->getId(),
+                'brand' => $car->getBrand(),
+                'model' => $car->getModel(),
+                'price' => $car->getPrice(),
+                'status' => $car->getStatus()->value
+            ]);
+        } catch (\Exception $e) {
+            return new JsonResponse(['error' => $e->getMessage()], 500);
+        }
     }
 
     #[Route('/cars/{id}', name: 'car_soft_delete', methods: ['DELETE'])]
     public function softDelete(EntityManagerInterface $entityManager, int $id): JsonResponse
     {
-        $car = $entityManager->getRepository(Car::class)->find($id);
-
-        if (!$car) {
+        try{
+            if($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
+                return new JsonResponse(['error' => 'Method Not Allowed'], 405);
+            }
+            $car = $entityManager->getRepository(Car::class)->find($id);
+    
+            if (!$car) {
+                return $this->json([
+                    'error' => 'Car not found'
+                ], 404);
+            }
+    
+            $car->setDeletedAt(new \DateTime());
+            $entityManager->persist($car);
+            $entityManager->flush();
+    
             return $this->json([
-                'error' => 'Car not found'
-            ], 404);
+                'message' => 'Car deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            return new JsonResponse(['error' => $e->getMessage()], 500);
         }
-
-        $car->setDeletedAt(new \DateTime());
-        $entityManager->persist($car);
-        $entityManager->flush();
-
-        return $this->json([
-            'message' => 'Car deleted successfully'
-        ]);
     }
 }
