@@ -30,6 +30,9 @@ class Car
     #[ORM\Column(enumType: CarStatus::class)]
     private ?CarStatus $status = null;
 
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $deleted_at = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -91,6 +94,18 @@ class Car
     public function setStatus(CarStatus $status): static
     {
         $this->status = $status;
+
+        return $this;
+    }
+
+    public function getDeletedAt(): ?\DateTimeInterface
+    {
+        return $this->deleted_at;
+    }
+
+    public function setDeletedAt(?\DateTimeInterface $deleted_at): static
+    {
+        $this->deleted_at = $deleted_at;
 
         return $this;
     }
