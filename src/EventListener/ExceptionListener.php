@@ -17,6 +17,7 @@ class ExceptionListener
     public function onKernelException(ExceptionEvent $event)
     {
         $exception = $event->getThrowable();
+
         //dd($exception instanceof ConnectionException);
         $statusCode = $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpException
             ? $exception->getStatusCode()
@@ -28,44 +29,44 @@ class ExceptionListener
             // 404
             case $exception instanceof NotFoundHttpException:
                 $statusCode = Response::HTTP_NOT_FOUND;
-                $message = 'Resource not found.';
+                $message = $exception->getMessage() ? : 'Resource not found.';
                 break;
             // 405
             case $exception instanceof MethodNotAllowedHttpException:
                 $statusCode = Response::HTTP_METHOD_NOT_ALLOWED;
-                $message = 'Method not allowed.';
+                $message = $exception->getMessage() ? : 'Method not allowed.';
                 break;
             // 400
             case $exception instanceof BadRequestHttpException:
                 $statusCode = Response::HTTP_BAD_REQUEST;
-                $message = 'Bad request.';
+                $message = $exception->getMessage() ? : 'Bad request.';
                 break;
             // 422
             case $exception instanceof ValidationFailedException:
                 $statusCode = Response::HTTP_UNPROCESSABLE_ENTITY;
-                $message = 'Validation failed.';
+                $message = $exception->getMessage() ? : 'Validation failed.';
                 $details = $this->formatValidationErrors($exception);
                 break;
             // 503
             case $exception instanceof ConnectionException:
                 $statusCode = Response::HTTP_SERVICE_UNAVAILABLE;
-                $message = 'Database connection error';
+                $message = $exception->getMessage() ? : 'Database connection error';
                 break;
             // 400
             case $exception instanceof QueryException:
                 $statusCode = Response::HTTP_BAD_REQUEST;
-                $message = 'Invalid query';
+                $message = $exception->getMessage() ? : 'Invalid query';
                 break;
             // 400
             case $exception instanceof \JsonException:
                 $statusCode = Response::HTTP_BAD_REQUEST;
-                $message = 'Invalid JSON format';
+                $message = $exception->getMessage() ? : 'Invalid JSON format';
                 break;
             // 500
-            case $exception instanceof DBALException:
-                $statusCode = Response::HTTP_INTERNAL_SERVER_ERROR;
-                $message = 'Internal server error.';
-                break;
+            // case $exception instanceof DBALException:
+            //     $statusCode = Response::HTTP_INTERNAL_SERVER_ERROR;
+            //     $message = $exception->getMessage() ? : 'Internal server error.';
+            //     break;
         }
         $data = [
             'status' => 'error',

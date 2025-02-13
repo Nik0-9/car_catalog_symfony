@@ -127,12 +127,13 @@ final class CarController extends AbstractController
             if (!isset($data['brand']) || !isset($data['model']) || !isset($data['price']) || !isset($data['production_year'])) {
                 throw new BadRequestHttpException('Missing required parameters for PUT request');
             }
-            
+
             $car->setBrand($data['brand']);
             $car->setModel($data['model']);
             $car->setPrice($data['price']);
             $car->setProductionYear($data['production_year']);
         } else {
+            //dd($data);
             if (isset($data['brand'])) {
                 $car->setBrand($data['brand']);
             }
@@ -191,5 +192,47 @@ final class CarController extends AbstractController
         return new JsonResponse([
             'message' => 'Car deleted successfully'
         ]);
+    }
+
+    #[Route('/cars/search', name: 'car_search', methods: ['GET'])]
+    public function search(Request $request): JsonResponse
+    {
+        $brand = $request->query->get('brand');
+        $status = $request->query->get('status');
+
+        $queryBuilder = $this->entityManager
+            ->getRepository(Car::class)
+            ->createQueryBuilder('c')
+            ->where('c.deleted_at IS NULL');
+
+        if ($brand !== null) {
+            $queryBuilder->andWhere('c.brand = :brand')
+                ->setParameter('brand', $brand);
+        }
+
+        if ($status !== null) {
+            $carStatus = CarStatus::tryFrom($status);
+            if (!$carStatus) {
+                throw new BadRequestHttpException('Invalid status value');
+            }
+            $queryBuilder->andWhere('c.status = :status')
+                ->setParameter('status', $carStatus);
+        }
+
+
+        $cars = $queryBuilder->getQuery()->getResult();
+
+        $data = [];
+        foreach ($cars as $car) {
+            $data[] = [
+                'id' => $car->getId(),
+                'brand' => $car->getBrand(),
+                'model' => $car->getModel(),
+                'price' => $car->getPrice(),
+                'status' => $car->getStatus()->value,
+                'production_year' => $car->getProductionYear(),
+            ];
+        }
+        return new JsonResponse($data);
     }
 }
