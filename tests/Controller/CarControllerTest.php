@@ -50,7 +50,7 @@ final class CarControllerTest extends WebTestCase
             json_encode($car)
         );
 
-        $this->assertResponseStatusCodeSame(200);
+        $this->assertResponseStatusCodeSame(201);
         $response = json_decode($this->client->getResponse()->getContent(), true);
         $this->assertArrayHasKey('id', $response);
         $this->assertEquals($car['brand'], $response['brand']);
