@@ -99,9 +99,3 @@ L'API gestisce i seguenti codici di errore:
 - 404: Risorsa non trovata
 - 405: Metodo non consentito
 - 500: Errore interno del server
-
-## Note Aggiuntive
-
-- L'API implementa il soft delete per le automobili
-- Lo stato di un'auto può essere "available" o "sold"
-- Tutti i prezzi sono gestiti con precisione di 2 decimali
