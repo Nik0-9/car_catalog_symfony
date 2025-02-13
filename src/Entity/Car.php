@@ -6,6 +6,8 @@ use App\Enum\CarStatus;
 use App\Repository\CarRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 #[ORM\Entity(repositoryClass: CarRepository::class)]
 class Car
@@ -16,15 +18,42 @@ class Car
     private ?int $id = null;
 
     #[ORM\Column(length: 50)]
+    #[Assert\NotBlank(message: 'Please enter a brand')]
+    #[Assert\Length(
+        min: 2,
+        max: 50,
+        minMessage: "Brand must be at least {{ limit }} characters",
+        maxMessage: "Brand can't exceed {{ limit }} characters"
+    )]
     private ?string $brand = null;
 
     #[ORM\Column(length: 50)]
+    #[Assert\NotBlank(message: "Please enter a model")]
+    #[Assert\Length(
+        min: 2,
+        max: 50,
+        minMessage: "Model must be at least {{ limit }} characters",
+        maxMessage: "Model can't exceed {{ limit }} characters"
+    )]
     private ?string $model = null;
-
+    
     #[ORM\Column(type: Types::SMALLINT)]
+    #[Assert\NotBlank(message: "Please enter a production year")]
     private ?int $production_year = null;
+    #[Assert\Callback]
+    public function validateProductionYear(ExecutionContextInterface $context):void{
+        $currentYear = (int)date('Y');
+        if($this->production_year > $currentYear || $this->production_year < 1900){
+            $context->buildViolation('Production year must be between 1900 and the current year')
+                ->atPath('production_year')
+                ->addViolation();
+        }
+    }
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
+    #[Assert\NotBlank(message: "Please enter a price")]
+    #[Assert\Positive(message: "Price must be higher than 0")]
+    #[Assert\LessThan(9999999.99, message: "Price must be lower than 99.999.999,99")]
     private ?string $price = null;
 
     #[ORM\Column(enumType: CarStatus::class)]
