@@ -49,7 +49,7 @@ final class CarController extends AbstractController
     }
 
     //shows a car seeked by id and not deleted
-    #[Route('/car/{id}', name: 'project_show', methods: ['GET'])]
+    #[Route('/car/{id<\d+>}', name: 'project_show', methods: ['GET'])]
     public function show(int $id): JsonResponse
     {
         $car = $this->entityManager->getRepository(Car::class)->find($id);
@@ -108,7 +108,7 @@ final class CarController extends AbstractController
             'production_year' => $car->getProductionYear()
         ], 201);
     }
-    //update existing car seeked by id also deleted
+    //update existing car seeked by id
     #[Route('/car/{id}', name: 'car_update', methods: ['PUT', 'PATCH'])]
     public function update(int $id, Request $request): JsonResponse
     {
@@ -116,6 +116,11 @@ final class CarController extends AbstractController
         if (!$car) {
             throw new NotFoundHttpException('Car not found');
         }
+
+        if ($car->getDeletedAt() !== null) {
+            throw new BadRequestHttpException('This car has been deleted and cannot be updated.');
+        }
+    
 
         try {
             $data = json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR);
@@ -199,6 +204,8 @@ final class CarController extends AbstractController
     {
         $brand = $request->query->get('brand');
         $status = $request->query->get('status');
+        $minPrice = $request->query->get('min_price');
+        $maxPrice = $request->query->get('max_price');
 
         $queryBuilder = $this->entityManager
             ->getRepository(Car::class)
@@ -219,6 +226,16 @@ final class CarController extends AbstractController
                 ->setParameter('status', $carStatus);
         }
 
+        if ($minPrice !== null) {
+            $queryBuilder->andWhere('c.price >= :minPrice')
+                ->setParameter('minPrice', $minPrice);
+        }
+
+        if ($maxPrice !== null) {
+            $queryBuilder->andWhere('c.price <= :maxPrice')
+                ->setParameter('maxPrice', $maxPrice);
+        }
+
 
         $cars = $queryBuilder->getQuery()->getResult();
 
@@ -235,4 +252,8 @@ final class CarController extends AbstractController
         }
         return new JsonResponse($data);
     }
+
+    //GET /api/cars/search?brand=BMW
+    //GET /api/cars/search?min_price=10000&max_price=50000
+    //GET /api/cars/search?status=AVAILABLE
 }
