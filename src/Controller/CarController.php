@@ -26,15 +26,32 @@ final class CarController extends AbstractController
     }
     //Show all cars not deleted
     #[Route('/cars', name: 'car_index', methods: ['GET'])]
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
 
-        $cars = $this->entityManager
+        $page = max(1, $request->query->getInt('page', 1));
+        $limit = max(1, min(50, $request->query->getInt('limit', 10))); // Li
+        
+        $queryBuilder = $this->entityManager
             ->getRepository(Car::class)
             ->createQueryBuilder('c')
-            ->andWhere('c.deleted_at IS NULL')
+            ->andWhere('c.deleted_at IS NULL');
+            
+        $totalQueryBuilder = clone $queryBuilder;
+        $total = $totalQueryBuilder
+            ->select('COUNT(c.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+        
+        
+        
+        $cars = $queryBuilder
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
+
+            $totalPages = ceil($total / $limit);
 
         $data = [];
         foreach ($cars as $car) {
@@ -47,7 +64,17 @@ final class CarController extends AbstractController
                 'production_year' => $car->getProductionYear(),
             ];
         }
-        return new JsonResponse($data);
+        return new JsonResponse([
+          'data' => $data,
+          'pagination' => [
+            'current_page' => $page,
+            'total_pages' => $totalPages,
+            'total_items' => $total,
+            'items_per_page' => $limit,
+            'has_previous' => $page > 1,
+            'has_next' => $page < $totalPages,
+          ],
+        ]);
     }
 
     //shows a car seeked by id and not deleted
