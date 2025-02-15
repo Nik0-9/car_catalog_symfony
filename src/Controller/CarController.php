@@ -9,6 +9,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
@@ -112,20 +113,21 @@ final class CarController extends AbstractController
     //update existing car seeked by id
     #[Route('/car/{id}', name: 'car_update', methods: ['PUT', 'PATCH'])]
     public function update(int $id, Request $request): JsonResponse
-    {
+{
+    try {
+        // Controlla che il metodo HTTP sia PUT o PATCH
+        if (!in_array($request->getMethod(), ['PUT', 'PATCH'])) {
+            throw new MethodNotAllowedHttpException(['PUT', 'PATCH']);
+        }
+
+        // Trova l'entità Car
         $car = $this->entityManager->getRepository(Car::class)->find($id);
         if (!$car) {
             throw new NotFoundHttpException('Car not found');
         }
 
-        if ($car->getDeletedAt() !== null) {
-            throw new BadRequestHttpException('This car has been deleted and cannot be updated.');
-        }
-    
-
-        try {
-            $data = json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR);
-        } catch (\JsonException $e) {
+        $data = json_decode($request->getContent(), true);
+        if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
             throw new BadRequestHttpException('Invalid JSON format');
         }
 
@@ -139,7 +141,6 @@ final class CarController extends AbstractController
             $car->setPrice($data['price']);
             $car->setProductionYear($data['production_year']);
         } else {
-            //dd($data);
             if (isset($data['brand'])) {
                 $car->setBrand($data['brand']);
             }
@@ -163,6 +164,10 @@ final class CarController extends AbstractController
 
         $violations = $this->validator->validate($car);
         if (count($violations) > 0) {
+            $errors = [];
+            foreach ($violations as $violation) {
+                $errors[$violation->getPropertyPath()] = $violation->getMessage();
+            }
             throw new ValidationFailedException($car, $violations);
         }
 
@@ -175,8 +180,11 @@ final class CarController extends AbstractController
             'price' => $car->getPrice(),
             'status' => $car->getStatus()->value,
             'production_year' => $car->getProductionYear()
-        ]);
+        ], 200);
+    } catch (\Exception $e) {
+        return new JsonResponse(['error' => $e->getMessage()], $e instanceof HttpExceptionInterface ? $e->getStatusCode() : 500);
     }
+}
 
 
     #[Route('/car/{id}', name: 'car_soft_delete', methods: ['DELETE'])]
