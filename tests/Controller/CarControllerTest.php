@@ -35,7 +35,13 @@ final class CarControllerTest extends WebTestCase
 
     public function testGetCars(): void
     {
-        $this->client->request('GET', '/api/cars');
+        $this->client->request('GET', '/api/cars',
+            [],
+            [],
+            [
+                'PHP_AUTH_USER' => 'user',
+                'PHP_AUTH_PW' => 'password'
+            ]);
         
         $this->assertEquals(JsonResponse::HTTP_OK, $this->client->getResponse()->getStatusCode());
         $this->assertResponseHeaderSame('Content-Type', 'application/json');
