@@ -151,7 +151,14 @@ final class CarControllerTest extends WebTestCase
     {
         $car = $this->createTestCar();
 
-        $this->client->request('DELETE', '/api/car/' . $car->getId());
+        $this->client->request('DELETE', '/api/car/' . $car->getId(),
+            [],
+            [],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'PHP_AUTH_USER' => 'user',
+                'PHP_AUTH_PW' => 'password'
+            ]);
         
         $this->assertResponseIsSuccessful();
         
