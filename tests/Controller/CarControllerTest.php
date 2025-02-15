@@ -55,7 +55,11 @@ final class CarControllerTest extends WebTestCase
             '/api/car',
             [],
             [],
-            ['CONTENT_TYPE' => 'application/json'],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'PHP_AUTH_USER' => 'user',
+                'PHP_AUTH_PW' => 'password'
+            ],
             json_encode($car)
         );
 
@@ -77,7 +81,11 @@ final class CarControllerTest extends WebTestCase
             '/api/car',
             [],
             [],
-            ['CONTENT_TYPE' => 'application/json'],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'PHP_AUTH_USER' => 'user',
+                'PHP_AUTH_PW' => 'password'
+            ],
             json_encode($invalidData)
         );
 
@@ -100,7 +108,11 @@ final class CarControllerTest extends WebTestCase
             '/api/car/' . $car->getId(),
             [],
             [],
-            ['CONTENT_TYPE' => 'application/json'],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'PHP_AUTH_USER' => 'user',
+                'PHP_AUTH_PW' => 'password'
+            ],
             json_encode($updateData)
         );
 
@@ -122,7 +134,11 @@ final class CarControllerTest extends WebTestCase
             '/api/car/' . $car->getId(),
             [],
             [],
-            ['CONTENT_TYPE' => 'application/json'],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'PHP_AUTH_USER' => 'user',
+                'PHP_AUTH_PW' => 'password'
+            ],
             json_encode($patchData)
         );
 
