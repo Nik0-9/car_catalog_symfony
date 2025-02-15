@@ -16,7 +16,6 @@ final class CarControllerTest extends WebTestCase
     {
         $this->client = static::createClient();
         $this->entityManager = static::getContainer()->get(EntityManagerInterface::class);
-        // Pulisci il database prima di ogni test
         $this->truncateEntities([Car::class]);
     }
 
@@ -192,7 +191,7 @@ final class CarControllerTest extends WebTestCase
     {
         parent::tearDown();
         
-        if ($this->entityManager) {
+        if ($this->entityManager !== null) {
             $this->truncateEntities([Car::class]);
             $this->entityManager->close();
             $this->entityManager = null;

@@ -31,27 +31,27 @@ final class CarController extends AbstractController
 
         $page = max(1, $request->query->getInt('page', 1));
         $limit = max(1, min(50, $request->query->getInt('limit', 10))); // Li
-        
+
         $queryBuilder = $this->entityManager
             ->getRepository(Car::class)
             ->createQueryBuilder('c')
             ->andWhere('c.deleted_at IS NULL');
-            
+
         $totalQueryBuilder = clone $queryBuilder;
         $total = $totalQueryBuilder
             ->select('COUNT(c.id)')
             ->getQuery()
             ->getSingleScalarResult();
-        
-        
-        
+
+
+
         $cars = $queryBuilder
             ->setFirstResult(($page - 1) * $limit)
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
 
-            $totalPages = ceil($total / $limit);
+        $totalPages = ceil($total / $limit);
 
         $data = [];
         foreach ($cars as $car) {
@@ -65,15 +65,15 @@ final class CarController extends AbstractController
             ];
         }
         return new JsonResponse([
-          'data' => $data,
-          'pagination' => [
-            'current_page' => $page,
-            'total_pages' => $totalPages,
-            'total_items' => $total,
-            'items_per_page' => $limit,
-            'has_previous' => $page > 1,
-            'has_next' => $page < $totalPages,
-          ],
+            'data' => $data,
+            'pagination' => [
+                'current_page' => $page,
+                'total_pages' => $totalPages,
+                'total_items' => $total,
+                'items_per_page' => $limit,
+                'has_previous' => $page > 1,
+                'has_next' => $page < $totalPages,
+            ],
         ]);
     }
 
@@ -140,78 +140,78 @@ final class CarController extends AbstractController
     //update existing car seeked by id
     #[Route('/car/{id}', name: 'car_update', methods: ['PUT', 'PATCH'])]
     public function update(int $id, Request $request): JsonResponse
-{
-    try {
-        // Controlla che il metodo HTTP sia PUT o PATCH
-        if (!in_array($request->getMethod(), ['PUT', 'PATCH'])) {
-            throw new MethodNotAllowedHttpException(['PUT', 'PATCH']);
-        }
-
-        // Trova l'entità Car
-        $car = $this->entityManager->getRepository(Car::class)->find($id);
-        if (!$car) {
-            throw new NotFoundHttpException('Car not found');
-        }
-
-        $data = json_decode($request->getContent(), true);
-        if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
-            throw new BadRequestHttpException('Invalid JSON format');
-        }
-
-        if ($request->getMethod() === 'PUT') {
-            if (!isset($data['brand']) || !isset($data['model']) || !isset($data['price']) || !isset($data['production_year'])) {
-                throw new BadRequestHttpException('Missing required parameters for PUT request');
+    {
+        try {
+            // Controlla che il metodo HTTP sia PUT o PATCH
+            if (!in_array($request->getMethod(), ['PUT', 'PATCH'])) {
+                throw new MethodNotAllowedHttpException(['PUT', 'PATCH']);
             }
 
-            $car->setBrand($data['brand']);
-            $car->setModel($data['model']);
-            $car->setPrice($data['price']);
-            $car->setProductionYear($data['production_year']);
-        } else {
-            if (isset($data['brand'])) {
-                $car->setBrand($data['brand']);
+            // Trova l'entità Car
+            $car = $this->entityManager->getRepository(Car::class)->find($id);
+            if (!$car) {
+                throw new NotFoundHttpException('Car not found');
             }
-            if (isset($data['model'])) {
-                $car->setModel($data['model']);
+
+            $data = json_decode($request->getContent(), true);
+            if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
+                throw new BadRequestHttpException('Invalid JSON format');
             }
-            if (isset($data['price'])) {
-                $car->setPrice($data['price']);
-            }
-            if (isset($data['production_year'])) {
-                $car->setProductionYear($data['production_year']);
-            }
-            if (isset($data['status'])) {
-                $status = CarStatus::tryFrom($data['status']);
-                if (!$status) {
-                    throw new BadRequestHttpException('Invalid status value');
+
+            if ($request->getMethod() === 'PUT') {
+                if (!isset($data['brand']) || !isset($data['model']) || !isset($data['price']) || !isset($data['production_year'])) {
+                    throw new BadRequestHttpException('Missing required parameters for PUT request');
                 }
-                $car->setStatus($status);
+
+                $car->setBrand($data['brand']);
+                $car->setModel($data['model']);
+                $car->setPrice($data['price']);
+                $car->setProductionYear($data['production_year']);
+            } else {
+                if (isset($data['brand'])) {
+                    $car->setBrand($data['brand']);
+                }
+                if (isset($data['model'])) {
+                    $car->setModel($data['model']);
+                }
+                if (isset($data['price'])) {
+                    $car->setPrice($data['price']);
+                }
+                if (isset($data['production_year'])) {
+                    $car->setProductionYear($data['production_year']);
+                }
+                if (isset($data['status'])) {
+                    $status = CarStatus::tryFrom($data['status']);
+                    if (!$status) {
+                        throw new BadRequestHttpException('Invalid status value');
+                    }
+                    $car->setStatus($status);
+                }
             }
-        }
 
-        $violations = $this->validator->validate($car);
-        if (count($violations) > 0) {
-            $errors = [];
-            foreach ($violations as $violation) {
-                $errors[$violation->getPropertyPath()] = $violation->getMessage();
+            $violations = $this->validator->validate($car);
+            if (count($violations) > 0) {
+                $errors = [];
+                foreach ($violations as $violation) {
+                    $errors[$violation->getPropertyPath()] = $violation->getMessage();
+                }
+                throw new ValidationFailedException($car, $violations);
             }
-            throw new ValidationFailedException($car, $violations);
+
+            $this->entityManager->flush();
+
+            return new JsonResponse([
+                'id' => $car->getId(),
+                'brand' => $car->getBrand(),
+                'model' => $car->getModel(),
+                'price' => $car->getPrice(),
+                'status' => $car->getStatus()->value,
+                'production_year' => $car->getProductionYear()
+            ], 200);
+        } catch (\Exception $e) {
+            return new JsonResponse(['error' => $e->getMessage()], $e instanceof HttpExceptionInterface ? $e->getStatusCode() : 500);
         }
-
-        $this->entityManager->flush();
-
-        return new JsonResponse([
-            'id' => $car->getId(),
-            'brand' => $car->getBrand(),
-            'model' => $car->getModel(),
-            'price' => $car->getPrice(),
-            'status' => $car->getStatus()->value,
-            'production_year' => $car->getProductionYear()
-        ], 200);
-    } catch (\Exception $e) {
-        return new JsonResponse(['error' => $e->getMessage()], $e instanceof HttpExceptionInterface ? $e->getStatusCode() : 500);
     }
-}
 
 
     #[Route('/car/{id}', name: 'car_soft_delete', methods: ['DELETE'])]
@@ -238,6 +238,11 @@ final class CarController extends AbstractController
     #[Route('/cars/search', name: 'car_search', methods: ['GET'])]
     public function search(Request $request): JsonResponse
     {
+
+        $page = max(1, $request->query->getInt('page', 1));
+        $limit = max(1, min(50, $request->query->getInt('limit', 10)));
+
+
         $brand = $request->query->get('brand');
         $status = $request->query->get('status');
         $minPrice = $request->query->get('min_price');
@@ -272,8 +277,20 @@ final class CarController extends AbstractController
                 ->setParameter('maxPrice', $maxPrice);
         }
 
+        $totalQueryBuilder = clone $queryBuilder;
+        $total = $totalQueryBuilder->select('COUNT(c.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
 
-        $cars = $queryBuilder->getQuery()->getResult();
+
+
+        $cars = $queryBuilder
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+
+        $totalPages = ceil($total / $limit);
 
         $data = [];
         foreach ($cars as $car) {
@@ -286,10 +303,22 @@ final class CarController extends AbstractController
                 'production_year' => $car->getProductionYear(),
             ];
         }
-        return new JsonResponse($data);
+        return new JsonResponse([
+            'data' => $data,
+            'pagination' => [
+                'current_page' => $page,
+                'total_pages' => $totalPages,
+                'total:items' => $total,
+                'items_per_page' => $limit,
+                'has_previous' => $page > 1,
+                'has_next' => $page < $totalPages
+            ],
+            'filter' => [
+                'brand' => $brand,
+                'status' => $status,
+                'min_price' => $minPrice,
+                'max_price' => $maxPrice
+            ]
+        ]);
     }
-
-    //GET /api/cars/search?brand=BMW
-    //GET /api/cars/search?min_price=10000&max_price=50000
-    //GET /api/cars/search?status=AVAILABLE
 }
