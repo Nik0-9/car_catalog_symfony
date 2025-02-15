@@ -5,6 +5,7 @@ use App\Entity\Car;
 use App\Enum\CarStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 final class CarControllerTest extends WebTestCase
 {
@@ -30,6 +31,14 @@ final class CarControllerTest extends WebTestCase
             );
             $connection->executeStatement($query);
         }
+    }
+
+    public function testGetCars(): void
+    {
+        $this->client->request('GET', '/api/cars');
+        
+        $this->assertEquals(JsonResponse::HTTP_OK, $this->client->getResponse()->getStatusCode());
+        $this->assertResponseHeaderSame('Content-Type', 'application/json');
     }
 
     public function testCreateCar()

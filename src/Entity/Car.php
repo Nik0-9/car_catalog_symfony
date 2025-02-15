@@ -40,6 +40,10 @@ class Car
     #[ORM\Column(type: Types::SMALLINT)]
     #[Assert\NotBlank(message: "Please enter a production year")]
     private ?int $production_year = null;
+    
+    /**
+     * this function checks if the production year is between 1900 and the current year
+     */
     #[Assert\Callback]
     public function validateProductionYear(ExecutionContextInterface $context):void{
         $currentYear = (int)date('Y');
