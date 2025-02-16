@@ -8,7 +8,7 @@ security:
         users_in_memory:
             memory:
                 users:
-                    user: 
+                    admin: 
                         password: '$2y$13$XuBRiDLFo69lDjWgmRUY/e4fTMRI9Hq6S.RiA98EBeeP2sAh6.ef.'  # Password in chiaro per test
                         roles: ['ROLE_USER']
 
@@ -26,26 +26,3 @@ security:
 
     access_control:
         - { path: ^/api, roles: ROLE_USER }
-
-
-    #     security:
-    # password_hashers:
-    #     Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
-    #         algorithm: plaintext
-
-    # providers:
-    #     users_in_memory:
-    #         memory:
-    #             users:
-    #                 user:
-    #                     password: 'user'
-    #                     roles: 'ROLE_USER'
-
-    # firewalls:
-    #     main:
-    #         pattern: ^/api
-    #         http_basic: ~
-    #         provider: users_in_memory
-
-    # access_control:
-    #     - { path: ^/api, roles: ROLE_USER }
