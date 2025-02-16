@@ -11,11 +11,10 @@ API REST per la gestione di un catalogo di automobili sviluppata con Symfony 7.2
 
 ## Guida all'Installazione di Symfony CLI
 
-<https://symfony.com/download>
-
 Prima di installare Symfony CLI, assicurati di avere:
-
 - Git
+
+guida all'installazione: <https://symfony.com/download>
 
 ## Installazione Progetto
 
@@ -60,6 +59,8 @@ Con Symfony CLI:
 ```bash
 symfony server:start
 ```
+
+L'applicazione sarà disponibile all'indirizzo: `http://127.0.0.1:8000`
 
 ## Endpoints API
 
