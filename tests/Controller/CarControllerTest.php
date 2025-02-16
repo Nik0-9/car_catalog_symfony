@@ -44,6 +44,9 @@ final class CarControllerTest extends WebTestCase
         
         $this->assertEquals(JsonResponse::HTTP_OK, $this->client->getResponse()->getStatusCode());
         $this->assertResponseHeaderSame('Content-Type', 'application/json');
+        $this->assertJson($this->client->getResponse()->getContent());
+        
+        
     }
 
     public function testCreateCar()
@@ -95,6 +98,9 @@ final class CarControllerTest extends WebTestCase
         );
 
         $this->assertResponseStatusCodeSame(400);
+        $response = json_decode($this->client->getResponse()->getContent(), true);
+        $this->assertArrayHasKey('message', $response);
+        $this->assertStringContainsString('Missing required parameters', $response['message']);
     }
 
     public function testUpdateCar()
